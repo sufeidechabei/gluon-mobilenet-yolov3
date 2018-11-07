@@ -16,7 +16,7 @@ good. It achieves 57.9 AP50 in 51 ms on a Titan X, compared
 to 57.5 AP50 in 198 ms by RetinaNet, similar performance
 but 3.8× faster. As always, all the code is online at
 https://pjreddie.com/yolo/.
-
+data
 [[Paper]](https://pjreddie.com/media/files/papers/YOLOv3.pdf) [[Original Implementation]](https://github.com/pjreddie/darknet)
 
 ## Credit
