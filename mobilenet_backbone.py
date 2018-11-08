@@ -47,9 +47,28 @@ class DarknetBasicBlockV3(gluon.HybridBlock):
         residual = x
         x = self.body(x)
         return x + residual
-class Mobile(gluon.HybridBlock):
-    "depthwise convolution and pointwise convolution"
-    
+def Mobile(channel, dw_channel, kernel, padding, stride, num_sync_bn_devices=-1):
+    """A common conv-bn-leakyrelu cell"""
+    cell = nn.HybridSequential(prefix='')
+    cell.add(nn.Conv2D(dw_channel, kernel_size=kernel,
+                       strides=stride, padding=padding, groups=dw_channel,  use_bias=False))
+    if num_sync_bn_devices < 1:
+        cell.add(nn.BatchNorm(epsilon=1e-5, momentum=0.9))
+    else:
+        cell.add(gluon.contrib.nn.SyncBatchNorm(
+            epsilon=1e-5, momentum=0.9, num_devices=num_sync_bn_devices))
+    cell.add(nn.LeakyReLU(0.1))
+    cell.add(nn.Conv2D(channel, kernel_size=1,
+                       use_bias=False))
+    if num_sync_bn_devices < 1:
+        cell.add(nn.BatchNorm(epsilon=1e-5, momentum=0.9))
+    else:
+        cell.add(gluon.contrib.nn.SyncBatchNorm(
+            epsilon=1e-5, momentum=0.9, num_devices=num_sync_bn_devices))
+    cell.add(nn.LeakyReLU(0.1))
+
+    return cell
+
 
 
 class MobileNetBlock(gluon.HybridBlock):
@@ -63,9 +82,20 @@ class MobileNetBlock(gluon.HybridBlock):
         Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
 
     """
-    def __init__(self, channel, num_sync_bn_devices=-1, **kwargs):
+    def __init__(self, channel, dw_channel, num_sync_bn_devices=-1, **kwargs):
         super(MobileNetBlock, self).__init__(**kwargs)
         self.body = nn.HybridSequential(prefix='')
+        self.body.add(Mobile(channel, dw_channel, 1, 0, 1, num_sync_bn_devices))
+        self.body.add(Mobile(channel * 2, channel, 3, 1, 1, num_sync_bn_devices))
+    def hybrid_forward(self, F, x, *args):
+        residual = x
+        x = self.body(x)
+        return residual + x
+
+
+
+
+
 
 
 
@@ -107,7 +137,7 @@ class DarknetV3(gluon.HybridBlock):
                 self.features.add(_conv2d(channel, 3, 1, 2, num_sync_bn_devices))
                 # add nlayer basic blocks
                 for _ in range(nlayer):
-                    self.features.add(DarknetBasicBlockV3(channel // 2, num_sync_bn_devices))
+                    self.features.add(MobileNetBlock(channel // 2, channel,  num_sync_bn_devices))
             # output
             self.output = nn.Dense(classes)
 
@@ -176,5 +206,6 @@ def darknet53(**kwargs):
         Darknet network.
 
     """
+    print("model")
     return get_darknet('v3', 53, **kwargs)
 
