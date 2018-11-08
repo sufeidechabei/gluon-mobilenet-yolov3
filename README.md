@@ -19,6 +19,7 @@ https://pjreddie.com/yolo/.
 
 [[Paper]](https://pjreddie.com/media/files/papers/YOLOv3.pdf) [[Original Implementation]](https://github.com/pjreddie/darknet)
 
+
 ## Credit
 ```
 @article{yolov3,
