@@ -10,6 +10,7 @@ from mxnet import nd
 from mxnet import gluon
 from mxnet import autograd
 import gluoncv as gcv
+from mobilenet_backbone import darknet53
 from gluoncv import data as gdata
 from gluoncv import utils as gutils
 from gluoncv.model_zoo import get_model
@@ -308,9 +309,11 @@ if __name__ == '__main__':
     args.save_prefix += net_name
     # use sync bn if specified
     num_sync_bn_devices = len(ctx) if args.syncbn else -1
+    num_sync_bn_devices = 8
     if num_sync_bn_devices > 1:
-        net = get_model(net_name, pretrained_base=True, num_sync_bn_devices=num_sync_bn_devices)
-        async_net = get_model(net_name, pretrained_base=False)  # used by cpu worker
+        print("netdebug")
+        net = darknet53(pretrained=False, num_sync_bn_devices=num_sync_bn_devices)
+        async_net = darknet53(pretrained=False)  # used by cpu worker
     else:
         net = get_model(net_name, pretrained_base=True)
         async_net = net
