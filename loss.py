@@ -10,6 +10,7 @@ from mxnet.gluon.loss import Loss, _apply_weighting, _reshape_like
 __all__ = ['FocalLoss', 'SSDMultiBoxLoss', 'YOLOV3Loss',
            'MixSoftmaxCrossEntropyLoss', 'MixSoftmaxCrossEntropyOHEMLoss']
 
+
 class FocalLoss(gluon.loss.Loss):
     """Focal Loss for inbalanced classification.
     Focal loss was described in https://arxiv.org/abs/1708.02002
@@ -53,6 +54,7 @@ class FocalLoss(gluon.loss.Loss):
         - **loss**: loss tensor with shape (batch_size,). Dimenions other than
           batch_axis are averaged out.
     """
+
     def __init__(self, axis=-1, alpha=0.25, gamma=2, sparse_label=True,
                  from_logits=False, batch_axis=0, weight=None, num_class=None,
                  eps=1e-12, size_average=True, **kwargs):
@@ -61,8 +63,12 @@ class FocalLoss(gluon.loss.Loss):
         self._alpha = alpha
         self._gamma = gamma
         self._sparse_label = sparse_label
-        if sparse_label and (not isinstance(num_class, int) or (num_class < 1)):
-            raise ValueError("Number of class > 0 must be provided if sparse label is used.")
+        if sparse_label and (
+            not isinstance(
+                num_class, int) or (
+                num_class < 1)):
+            raise ValueError(
+                "Number of class > 0 must be provided if sparse label is used.")
         self._num_class = num_class
         self._from_logits = from_logits
         self._eps = eps
@@ -79,12 +85,14 @@ class FocalLoss(gluon.loss.Loss):
         pt = F.where(one_hot, pred, 1 - pred)
         t = F.ones_like(one_hot)
         alpha = F.where(one_hot, self._alpha * t, (1 - self._alpha) * t)
-        loss = -alpha * ((1 - pt) ** self._gamma) * F.log(F.minimum(pt + self._eps, 1))
+        loss = -alpha * ((1 - pt) ** self._gamma) * \
+            F.log(F.minimum(pt + self._eps, 1))
         loss = _apply_weighting(F, loss, self._weight, sample_weight)
         if self._size_average:
             return F.mean(loss, axis=self._batch_axis, exclude=True)
         else:
             return F.sum(loss, axis=self._batch_axis, exclude=True)
+
 
 def _as_list(arr):
     """Make sure input is a list of mxnet NDArray"""
@@ -110,6 +118,7 @@ class SSDMultiBoxLoss(gluon.Block):
         Relative weight between classification and box regression loss.
         The overall loss is computed as :math:`L = loss_{class} + \lambda \times loss_{loc}`.
     """
+
     def __init__(self, negative_mining_ratio=3, rho=1.0, lambd=1.0, **kwargs):
         super(SSDMultiBoxLoss, self).__init__(**kwargs)
         self._negative_mining_ratio = max(0, negative_mining_ratio)
@@ -119,11 +128,12 @@ class SSDMultiBoxLoss(gluon.Block):
     def forward(self, cls_pred, box_pred, cls_target, box_target):
         """Compute loss in entire batch across devices."""
         # require results across different devices at this time
-        cls_pred, box_pred, cls_target, box_target = [_as_list(x) \
-            for x in (cls_pred, box_pred, cls_target, box_target)]
+        cls_pred, box_pred, cls_target, box_target = [
+            _as_list(x) for x in (cls_pred, box_pred, cls_target, box_target)]
         # cross device reduction to obtain positive samples in entire batch
         num_pos = []
-        for cp, bp, ct, bt in zip(*[cls_pred, box_pred, cls_target, box_target]):
+        for cp, bp, ct, bt in zip(
+                *[cls_pred, box_pred, cls_target, box_target]):
             pos_samples = (ct > 0)
             num_pos.append(pos_samples.sum())
         num_pos_all = sum([p.asscalar() for p in num_pos])
@@ -131,27 +141,45 @@ class SSDMultiBoxLoss(gluon.Block):
             # no positive samples found, return dummy losses
             return nd.zeros((1,)), nd.zeros((1,)), nd.zeros((1,))
 
-        # compute element-wise cross entropy loss and sort, then perform negative mining
+        # compute element-wise cross entropy loss and sort, then perform
+        # negative mining
         cls_losses = []
         box_losses = []
         sum_losses = []
-        for cp, bp, ct, bt in zip(*[cls_pred, box_pred, cls_target, box_target]):
+        for cp, bp, ct, bt in zip(
+                *[cls_pred, box_pred, cls_target, box_target]):
             pred = nd.log_softmax(cp, axis=-1)
             pos = ct > 0
             cls_loss = -nd.pick(pred, ct, axis=-1, keepdims=False)
             rank = (cls_loss * (pos - 1)).argsort(axis=1).argsort(axis=1)
-            hard_negative = rank < (pos.sum(axis=1) * self._negative_mining_ratio).expand_dims(-1)
+            hard_negative = rank < (
+                pos.sum(axis=1) * self._negative_mining_ratio).expand_dims(-1)
             # mask out if not positive or negative
-            cls_loss = nd.where((pos + hard_negative) > 0, cls_loss, nd.zeros_like(cls_loss))
-            cls_losses.append(nd.sum(cls_loss, axis=0, exclude=True) / num_pos_all)
+            cls_loss = nd.where(
+                (pos + hard_negative) > 0,
+                cls_loss,
+                nd.zeros_like(cls_loss))
+            cls_losses.append(
+                nd.sum(
+                    cls_loss,
+                    axis=0,
+                    exclude=True) /
+                num_pos_all)
 
             bp = _reshape_like(nd, bp, bt)
             box_loss = nd.abs(bp - bt)
-            box_loss = nd.where(box_loss > self._rho, box_loss - 0.5 * self._rho,
-                                (0.5 / self._rho) * nd.square(box_loss))
+            box_loss = nd.where(
+                box_loss > self._rho,
+                box_loss - 0.5 * self._rho,
+                (0.5 / self._rho) * nd.square(box_loss))
             # box loss only apply to positive samples
             box_loss = box_loss * pos.expand_dims(axis=-1)
-            box_losses.append(nd.sum(box_loss, axis=0, exclude=True) / num_pos_all)
+            box_losses.append(
+                nd.sum(
+                    box_loss,
+                    axis=0,
+                    exclude=True) /
+                num_pos_all)
             sum_losses.append(cls_losses[-1] + self._lambd * box_losses[-1])
 
         return sum_losses, cls_losses, box_losses
@@ -166,13 +194,26 @@ class YOLOV3Loss(gluon.loss.Loss):
     weight : float or None
         Global scalar weight for loss.
     """
+
     def __init__(self, batch_axis=0, weight=None, **kwargs):
         super(YOLOV3Loss, self).__init__(weight, batch_axis, **kwargs)
-        self._sigmoid_ce = gluon.loss.SigmoidBinaryCrossEntropyLoss(from_sigmoid=False)
+        self._sigmoid_ce = gluon.loss.SigmoidBinaryCrossEntropyLoss(
+            from_sigmoid=False)
         self._l1_loss = gluon.loss.L1Loss()
 
-    def hybrid_forward(self, F, objness, box_centers, box_scales, cls_preds,
-                       objness_t, center_t, scale_t, weight_t, class_t, class_mask):
+    def hybrid_forward(
+            self,
+            F,
+            objness,
+            box_centers,
+            box_scales,
+            cls_preds,
+            objness_t,
+            center_t,
+            scale_t,
+            weight_t,
+            class_t,
+            class_mask):
         """Compute YOLOv3 losses.
         Parameters
         ----------
@@ -208,18 +249,45 @@ class YOLOV3Loss(gluon.loss.Loss):
         """
         # compute some normalization count, except batch-size
         denorm = F.cast(
-            F.shape_array(objness_t).slice_axis(axis=0, begin=1, end=None).prod(), 'float32')
+            F.shape_array(objness_t).slice_axis(
+                axis=0,
+                begin=1,
+                end=None).prod(),
+            'float32')
         weight_t = F.broadcast_mul(weight_t, objness_t)
-        hard_objness_t = F.where(objness_t > 0, F.ones_like(objness_t), objness_t)
+        hard_objness_t = F.where(
+            objness_t > 0,
+            F.ones_like(objness_t),
+            objness_t)
         new_objness_mask = F.where(objness_t > 0, objness_t, objness_t >= 0)
         obj_loss = F.broadcast_mul(
-            self._sigmoid_ce(objness, hard_objness_t, new_objness_mask), denorm)
-        center_loss = F.broadcast_mul(self._sigmoid_ce(box_centers, center_t, weight_t), denorm * 2)
-        scale_loss = F.broadcast_mul(self._l1_loss(box_scales, scale_t, weight_t), denorm * 2)
+            self._sigmoid_ce(
+                objness,
+                hard_objness_t,
+                new_objness_mask),
+            denorm)
+        center_loss = F.broadcast_mul(
+            self._sigmoid_ce(
+                box_centers,
+                center_t,
+                weight_t),
+            denorm * 2)
+        scale_loss = F.broadcast_mul(
+            self._l1_loss(
+                box_scales,
+                scale_t,
+                weight_t),
+            denorm * 2)
         denorm_class = F.cast(
-            F.shape_array(class_t).slice_axis(axis=0, begin=1, end=None).prod(), 'float32')
+            F.shape_array(class_t).slice_axis(
+                axis=0, begin=1, end=None).prod(), 'float32')
         class_mask = F.broadcast_mul(class_mask, objness_t)
-        cls_loss = F.broadcast_mul(self._sigmoid_ce(cls_preds, class_t, class_mask), denorm_class)
+        cls_loss = F.broadcast_mul(
+            self._sigmoid_ce(
+                cls_preds,
+                class_t,
+                class_mask),
+            denorm_class)
         return obj_loss, center_loss, scale_loss, cls_loss
 
 
@@ -243,9 +311,15 @@ class SoftmaxCrossEntropyLoss(Loss):
     size_average : bool, default False
         Whether to re-scale loss with regard to ignored labels.
     """
+
     def __init__(self, sparse_label=True, batch_axis=0, ignore_label=-1,
                  size_average=True, **kwargs):
-        super(SoftmaxCrossEntropyLoss, self).__init__(None, batch_axis, **kwargs)
+        super(
+            SoftmaxCrossEntropyLoss,
+            self).__init__(
+            None,
+            batch_axis,
+            **kwargs)
         self._sparse_label = sparse_label
         self._ignore_label = ignore_label
         self._size_average = size_average
@@ -253,13 +327,18 @@ class SoftmaxCrossEntropyLoss(Loss):
     def hybrid_forward(self, F, pred, label):
         """Compute loss"""
         softmaxout = F.SoftmaxOutput(
-            pred, label.astype(pred.dtype), ignore_label=self._ignore_label,
+            pred,
+            label.astype(
+                pred.dtype),
+            ignore_label=self._ignore_label,
             multi_output=self._sparse_label,
-            use_ignore=True, normalization='valid' if self._size_average else 'null')
+            use_ignore=True,
+            normalization='valid' if self._size_average else 'null')
         loss = -F.pick(F.log(softmaxout), label, axis=1, keepdims=True)
         loss = F.where(label.expand_dims(axis=1) == self._ignore_label,
                        F.zeros_like(loss), loss)
         return F.mean(loss, axis=self._batch_axis, exclude=True)
+
 
 class MixSoftmaxCrossEntropyLoss(SoftmaxCrossEntropyLoss):
     """SoftmaxCrossEntropyLoss2D with Auxiliary Loss
@@ -272,7 +351,14 @@ class MixSoftmaxCrossEntropyLoss(SoftmaxCrossEntropyLoss):
     ignore_label : int, default -1
         The label to ignore.
     """
-    def __init__(self, aux=True, mixup=False, aux_weight=0.2, ignore_label=-1, **kwargs):
+
+    def __init__(
+            self,
+            aux=True,
+            mixup=False,
+            aux_weight=0.2,
+            ignore_label=-1,
+            **kwargs):
         super(MixSoftmaxCrossEntropyLoss, self).__init__(
             ignore_label=ignore_label, **kwargs)
         self.aux = aux
@@ -303,8 +389,8 @@ class MixSoftmaxCrossEntropyLoss(SoftmaxCrossEntropyLoss):
         else:
             label1 = _reshape_like(F, label1, pred)
             label2 = _reshape_like(F, label2, pred)
-            loss1 = -F.sum(pred*label1, axis=self._axis, keepdims=True)
-            loss2 = -F.sum(pred*label2, axis=self._axis, keepdims=True)
+            loss1 = -F.sum(pred * label1, axis=self._axis, keepdims=True)
+            loss2 = -F.sum(pred * label2, axis=self._axis, keepdims=True)
             loss = lam * loss1 + (1 - lam) * loss2
         loss = _apply_weighting(F, loss, self._weight, sample_weight)
         return F.mean(loss, axis=self._batch_axis, exclude=True)
@@ -322,6 +408,7 @@ class MixSoftmaxCrossEntropyLoss(SoftmaxCrossEntropyLoss):
             else:
                 return super(MixSoftmaxCrossEntropyLoss, self). \
                     hybrid_forward(F, *inputs, **kwargs)
+
 
 class SoftmaxCrossEntropyOHEMLoss(Loss):
     r"""SoftmaxCrossEntropyLoss with ignore labels
@@ -343,9 +430,15 @@ class SoftmaxCrossEntropyOHEMLoss(Loss):
     size_average : bool, default False
         Whether to re-scale loss with regard to ignored labels.
     """
+
     def __init__(self, sparse_label=True, batch_axis=0, ignore_label=-1,
                  size_average=True, **kwargs):
-        super(SoftmaxCrossEntropyOHEMLoss, self).__init__(None, batch_axis, **kwargs)
+        super(
+            SoftmaxCrossEntropyOHEMLoss,
+            self).__init__(
+            None,
+            batch_axis,
+            **kwargs)
         self._sparse_label = sparse_label
         self._ignore_label = ignore_label
         self._size_average = size_average
@@ -353,14 +446,20 @@ class SoftmaxCrossEntropyOHEMLoss(Loss):
     def hybrid_forward(self, F, pred, label):
         """Compute loss"""
         softmaxout = F.contrib.SoftmaxOHEMOutput(
-            pred, label.astype(pred.dtype), ignore_label=self._ignore_label,
+            pred,
+            label.astype(
+                pred.dtype),
+            ignore_label=self._ignore_label,
             multi_output=self._sparse_label,
-            use_ignore=True, normalization='valid' if self._size_average else 'null',
-            thresh=0.6, min_keep=256)
+            use_ignore=True,
+            normalization='valid' if self._size_average else 'null',
+            thresh=0.6,
+            min_keep=256)
         loss = -F.pick(F.log(softmaxout), label, axis=1, keepdims=True)
         loss = F.where(label.expand_dims(axis=1) == self._ignore_label,
                        F.zeros_like(loss), loss)
         return F.mean(loss, axis=self._batch_axis, exclude=True)
+
 
 class MixSoftmaxCrossEntropyOHEMLoss(SoftmaxCrossEntropyOHEMLoss):
     """SoftmaxCrossEntropyLoss2D with Auxiliary Loss
@@ -373,6 +472,7 @@ class MixSoftmaxCrossEntropyOHEMLoss(SoftmaxCrossEntropyOHEMLoss):
     ignore_label : int, default -1
         The label to ignore.
     """
+
     def __init__(self, aux=True, aux_weight=0.2, ignore_label=-1, **kwargs):
         super(MixSoftmaxCrossEntropyOHEMLoss, self).__init__(
             ignore_label=ignore_label, **kwargs)

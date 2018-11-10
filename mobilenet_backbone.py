@@ -9,6 +9,7 @@ from mxnet.gluon import nn
 
 __all__ = ['DarknetV3', 'get_darknet', 'darknet53']
 
+
 def _conv2d(channel, kernel, padding, stride, num_sync_bn_devices=-1):
     """A common conv-bn-leakyrelu cell"""
     cell = nn.HybridSequential(prefix='')
@@ -34,6 +35,7 @@ class DarknetBasicBlockV3(gluon.HybridBlock):
         Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
 
     """
+
     def __init__(self, channel, num_sync_bn_devices=-1, **kwargs):
         super(DarknetBasicBlockV3, self).__init__(**kwargs)
         self.body = nn.HybridSequential(prefix='')
@@ -47,11 +49,26 @@ class DarknetBasicBlockV3(gluon.HybridBlock):
         residual = x
         x = self.body(x)
         return x + residual
-def Mobile(channel, dw_channel, kernel, padding, stride, num_sync_bn_devices=-1):
+
+
+def Mobile(
+        channel,
+        dw_channel,
+        kernel,
+        padding,
+        stride,
+        num_sync_bn_devices=-
+        1):
     """A common conv-bn-leakyrelu cell"""
     cell = nn.HybridSequential(prefix='')
-    cell.add(nn.Conv2D(dw_channel, kernel_size=kernel,
-                       strides=stride, padding=padding, groups=dw_channel,  use_bias=False))
+    cell.add(
+        nn.Conv2D(
+            dw_channel,
+            kernel_size=kernel,
+            strides=stride,
+            padding=padding,
+            groups=dw_channel,
+            use_bias=False))
     if num_sync_bn_devices < 1:
         cell.add(nn.BatchNorm(epsilon=1e-5, momentum=0.9))
     else:
@@ -70,7 +87,6 @@ def Mobile(channel, dw_channel, kernel, padding, stride, num_sync_bn_devices=-1)
     return cell
 
 
-
 class MobileNetBlock(gluon.HybridBlock):
     """It's composed of deepwiseconv and one by one conv.
 
@@ -82,22 +98,31 @@ class MobileNetBlock(gluon.HybridBlock):
         Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
 
     """
+
     def __init__(self, channel, dw_channel, num_sync_bn_devices=-1, **kwargs):
         super(MobileNetBlock, self).__init__(**kwargs)
         self.body = nn.HybridSequential(prefix='')
-        self.body.add(Mobile(channel, dw_channel, 1, 0, 1, num_sync_bn_devices))
-        self.body.add(Mobile(channel * 2, channel, 3, 1, 1, num_sync_bn_devices))
+        self.body.add(
+            Mobile(
+                channel,
+                dw_channel,
+                1,
+                0,
+                1,
+                num_sync_bn_devices))
+        self.body.add(
+            Mobile(
+                channel * 2,
+                channel,
+                3,
+                1,
+                1,
+                num_sync_bn_devices))
+
     def hybrid_forward(self, F, x, *args):
         residual = x
         x = self.body(x)
         return residual + x
-
-
-
-
-
-
-
 
 
 class DarknetV3(gluon.HybridBlock):
@@ -122,7 +147,14 @@ class DarknetV3(gluon.HybridBlock):
         A classes(1000)-way Fully-Connected Layer.
 
     """
-    def __init__(self, layers, channels, classes=1000, num_sync_bn_devices=-1, **kwargs):
+
+    def __init__(
+            self,
+            layers,
+            channels,
+            classes=1000,
+            num_sync_bn_devices=-1,
+            **kwargs):
         super(DarknetV3, self).__init__(**kwargs)
         assert len(layers) == len(channels) - 1, (
             "len(channels) should equal to len(layers) + 1, given {} vs {}".format(
@@ -130,14 +162,31 @@ class DarknetV3(gluon.HybridBlock):
         with self.name_scope():
             self.features = nn.HybridSequential()
             # first 3x3 conv
-            self.features.add(_conv2d(channels[0], 3, 1, 1, num_sync_bn_devices))
+            self.features.add(
+                _conv2d(
+                    channels[0],
+                    3,
+                    1,
+                    1,
+                    num_sync_bn_devices))
             for nlayer, channel in zip(layers, channels[1:]):
-                assert channel % 2 == 0, "channel {} cannot be divided by 2".format(channel)
+                assert channel % 2 == 0, "channel {} cannot be divided by 2".format(
+                    channel)
                 # add downsample conv with stride=2
-                self.features.add(_conv2d(channel, 3, 1, 2, num_sync_bn_devices))
+                self.features.add(
+                    _conv2d(
+                        channel,
+                        3,
+                        1,
+                        2,
+                        num_sync_bn_devices))
                 # add nlayer basic blocks
                 for _ in range(nlayer):
-                    self.features.add(MobileNetBlock(channel // 2, channel,  num_sync_bn_devices))
+                    self.features.add(
+                        MobileNetBlock(
+                            channel // 2,
+                            channel,
+                            num_sync_bn_devices))
             # output
             self.output = nn.Dense(classes)
 
@@ -146,11 +195,13 @@ class DarknetV3(gluon.HybridBlock):
         x = F.Pooling(x, kernel=(7, 7), global_pool=True, pool_type='avg')
         return self.output(x)
 
+
 # default configurations
 darknet_versions = {'v3': DarknetV3}
 darknet_spec = {
-    'v3': {53: ([1, 2, 8, 8, 4], [32, 64, 128, 256, 512, 1024]),}
+    'v3': {53: ([1, 2, 8, 8, 4], [32, 64, 128, 256, 512, 1024]), }
 }
+
 
 def get_darknet(darknet_version, num_layers, pretrained=False, ctx=mx.cpu(),
                 root=os.path.join('~', '.mxnet', 'models'), **kwargs):
@@ -185,16 +236,17 @@ def get_darknet(darknet_version, num_layers, pretrained=False, ctx=mx.cpu(),
         "Invalid darknet version: {}. Options are {}".format(
             darknet_version, str(darknet_versions.keys())))
     specs = darknet_spec[darknet_version]
-    assert num_layers in specs, (
-        "Invalid number of layers: {}. Options are {}".format(num_layers, str(specs.keys())))
+    assert num_layers in specs, ("Invalid number of layers: {}. Options are {}".format(
+        num_layers, str(specs.keys())))
     layers, channels = specs[num_layers]
     darknet_class = darknet_versions[darknet_version]
     net = darknet_class(layers, channels, **kwargs)
     if pretrained:
         from gluoncv.model_zoo.model_store import get_model_file
         net.load_parameters(get_model_file(
-            'darknet%d'%(num_layers), tag=pretrained, root=root), ctx=ctx)
+            'darknet%d' % (num_layers), tag=pretrained, root=root), ctx=ctx)
     return net
+
 
 def darknet53(**kwargs):
     """Darknet v3 53 layer network.
@@ -208,4 +260,3 @@ def darknet53(**kwargs):
     """
     print("model")
     return get_darknet('v3', 53, **kwargs)
-
