@@ -7,7 +7,7 @@ import numpy as np
 from mxnet import gluon
 from mxnet import nd
 from mxnet import autograd
-from ...nn.bbox import BBoxCornerToCenter, BBoxCenterToCorner, BBoxBatchIOU
+from gluoncv.nn.bbox import BBoxCornerToCenter, BBoxCenterToCorner, BBoxBatchIOU
 
 
 class YOLOV3PrefetchTargetGenerator(gluon.Block):
@@ -261,3 +261,5 @@ class YOLOV3TargetMerger(gluon.HybridBlock):
             class_mask = mask.tile(reps=(self._num_class,)) * (class_targets >= 0)
             return [F.stop_gradient(x) for x in [objectness, center_targets, scale_targets,
                                                  weights, class_targets, class_mask]]
+if __name__ == '__main__':
+    pass

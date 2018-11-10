@@ -21,6 +21,7 @@ from gluoncv.data.dataloader import RandomTransformDataLoader
 from gluoncv.utils.metrics.voc_detection import VOC07MApMetric
 from gluoncv.utils.metrics.coco_detection import COCODetectionMetric
 from gluoncv.utils import LRScheduler
+from yolo3 import yolo3_darknet53_voc
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train YOLO networks with random input shape.')
@@ -312,8 +313,8 @@ if __name__ == '__main__':
     num_sync_bn_devices = 8
     if num_sync_bn_devices > 1:
         print("netdebug")
-        net = darknet53(pretrained=False, num_sync_bn_devices=num_sync_bn_devices)
-        async_net = darknet53(pretrained=False)  # used by cpu worker
+        net = yolo3_darknet53_voc(pretrained_base=False, num_sync_bn_devices=num_sync_bn_devices)
+        async_net = yolo3_darknet53_voc(pretrained_base=False)  # used by cpu worker
     else:
         net = get_model(net_name, pretrained_base=True)
         async_net = net

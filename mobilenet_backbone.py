@@ -191,7 +191,7 @@ def get_darknet(darknet_version, num_layers, pretrained=False, ctx=mx.cpu(),
     darknet_class = darknet_versions[darknet_version]
     net = darknet_class(layers, channels, **kwargs)
     if pretrained:
-        from ..model_store import get_model_file
+        from gluoncv.model_zoo.model_store import get_model_file
         net.load_parameters(get_model_file(
             'darknet%d'%(num_layers), tag=pretrained, root=root), ctx=ctx)
     return net
