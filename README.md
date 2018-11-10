@@ -27,6 +27,23 @@ We present a class of efficient models called MobileNets for mobile and embedded
 
 [[Paper]](https://arxiv.org/abs/1704.04861) [[Original Implementation]](https://github.com/Zehaos/MobileNet)
 
+## Prerequisites
+1. Python 3.6 +
+2. Gluoncv
+3. Mxnet
+
+## Usage
+### VOC
+```
+cd gluon-mobilenet-yolov3
+python3 train_yolo3.py --network darknet53 --dataset voc --gpus 0,1,2,3,4,5,6,7 --batch-size 64 -j 16 --log-interval 100 --lr-decay-epoch 160,180 --epochs 200 --syncbn --warmup-epochs 4
+```
+### COCO
+```
+python3 train_yolo3.py --network darknet53 --dataset coco --gpus 0,1,2,3,4,5,6,7 --batch-size 64 -j 32 --log-interval 100 --lr-decay-epoch 220,250 --epochs 280 --syncbn --warmup-epochs 2 --mixup --no-mixup-epochs 20 --label-smooth --no-wd
+```
+
+
 
 ## Credit
 ```
