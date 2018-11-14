@@ -41,9 +41,9 @@ python3 train_yolo3.py --network darknet53 --dataset voc --gpus 0,1,2,3,4,5,6,7 
 
 ## MAP
 
-| Backbone                | GPU     | MAP      | 
-| ----------------------- |:--------:|:--------:|
-| Darknet(deepwise)      | 8 Tesla v100    |   67.67       |
+| Backbone                | GPU     | Dataset    | MAP      | 
+| ----------------------- |:--------:|:--------:| :--------:|
+| Darknet(deepwise)      | 8 Tesla v100  | VOC    |  67.67       |
 
 
 
