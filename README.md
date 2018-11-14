@@ -43,6 +43,12 @@ python3 train_yolo3.py --network darknet53 --dataset voc --gpus 0,1,2,3,4,5,6,7 
 python3 train_yolo3.py --network darknet53 --dataset coco --gpus 0,1,2,3,4,5,6,7 --batch-size 64 -j 32 --log-interval 100 --lr-decay-epoch 220,250 --epochs 280 --syncbn --warmup-epochs 2 --mixup --no-mixup-epochs 20 --label-smooth --no-wd
 ```
 
+## MAP (8 Tesla v100)
+
+| Backbone                | Dataset      | MAP      |
+| ----------------------- |:--------:|:--------:|
+| Darknet(deepwise)      | VOC     |   67.67       |
+
 
 
 ## Credit
