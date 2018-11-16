@@ -6,6 +6,7 @@ import os
 import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import nn
+from gluoncv.model_zoo.mobilenet import MobileNet
 
 __all__ = ['DarknetV3', 'get_darknet', 'darknet53']
 
@@ -195,6 +196,48 @@ class DarknetV3(gluon.HybridBlock):
         x = F.Pooling(x, kernel=(7, 7), global_pool=True, pool_type='avg')
         return self.output(x)
 
+class MobileBackbone(gluon.HybridBlock):
+    """MobileNet.
+
+    Parameters
+    ----------
+    layers : iterable
+        Description of parameter `layers`.
+    channels : iterable
+        Description of parameter `channels`.
+    classes : int, default is 1000
+        Number of classes, which determines the dense layer output channels.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
+
+    Attributes
+    ----------
+    features : mxnet.gluon.nn.HybridSequential
+        Feature extraction layers.
+    output : mxnet.gluon.nn.Dense
+        A classes(1000)-way Fully-Connected Layer.
+
+    """
+
+    def __init__(
+            self,
+            layers,
+            channels,
+            classes=1000,
+            num_sync_bn_devices=-1,
+            **kwargs):
+        super(DarknetV3, self).__init__(**kwargs)
+        assert len(layers) == len(channels) - 1, (
+            "len(channels) should equal to len(layers) + 1, given {} vs {}".format(
+                len(channels), len(layers)))
+        with self.name_scope():
+            self.features = MobileNet(classes = classes)
+
+
+    def hybrid_forward(self, F, x):
+        output = self.features(x)
+        return output
+
 
 # default configurations
 darknet_versions = {'v3': DarknetV3}
@@ -260,3 +303,4 @@ def darknet53(**kwargs):
     """
     print("model")
     return get_darknet('v3', 53, **kwargs)
+

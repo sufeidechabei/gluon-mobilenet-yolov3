@@ -21,7 +21,7 @@ from gluoncv.data.dataloader import RandomTransformDataLoader
 from gluoncv.utils.metrics.voc_detection import VOC07MApMetric
 from gluoncv.utils.metrics.coco_detection import COCODetectionMetric
 from gluoncv.utils import LRScheduler
-from yolo3 import yolo3_darknet53_voc
+from yolo3 import yolo3_mobilenet_voc
 
 
 def parse_args():
@@ -452,10 +452,10 @@ if __name__ == '__main__':
     num_sync_bn_devices = 8
     if num_sync_bn_devices > 1:
         print("netdebug")
-        net = yolo3_darknet53_voc(
+        net = yolo3_mobilenet_voc(
             pretrained_base=False,
             num_sync_bn_devices=num_sync_bn_devices)
-        async_net = yolo3_darknet53_voc(
+        async_net = yolo3_mobilenet_voc(
             pretrained_base=False)  # used by cpu worker
     else:
         net = get_model(net_name, pretrained_base=True)

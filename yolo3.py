@@ -727,3 +727,46 @@ def yolo3_darknet53_custom(
             **kwargs)
         net.reset_class(classes)
     return net
+
+def yolo3_mobilenet_voc(
+        pretrained_base=True,
+        pretrained=False,
+        num_sync_bn_devices=-1,
+        **kwargs):
+    """YOLO3 multi-scale with darknet53 base network on VOC dataset.
+
+    Parameters
+    ----------
+    pretrained_base : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    num_sync_bn_devices : int
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
+
+    Returns
+    -------
+    mxnet.gluon.HybridBlock
+        Fully hybrid yolo3 network.
+
+    """
+    from gluoncv.data import VOCDetection
+    from gluoncv.model_zoo.mobilenet import get_mobilenet
+    pretrained_base = False if pretrained else pretrained_base
+    print(pretrained_base)
+    base_net = get_mobilenet(
+        pretrained=pretrained_base,
+        num_sync_bn_devices=num_sync_bn_devices,
+        **kwargs)
+    stages = [base_net.features[:6],
+              base_net.features[6:12],
+              base_net.features[12:]]
+    anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62,
+                                          45, 59, 119], [116, 90, 156, 198, 373, 326]]
+    strides = [8, 16, 32]
+    classes = VOCDetection.CLASSES
+    return get_yolov3(
+        'mobile', stages, [512, 256, 128], anchors, strides, classes, 'voc',
+        pretrained=pretrained, num_sync_bn_devices=num_sync_bn_devices, **kwargs)
