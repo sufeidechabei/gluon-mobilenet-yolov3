@@ -728,6 +728,7 @@ def yolo3_darknet53_custom(
         net.reset_class(classes)
     return net
 
+
 def yolo3_mobilenet_voc(
         pretrained_base=True,
         pretrained=False,
@@ -757,6 +758,7 @@ def yolo3_mobilenet_voc(
     pretrained_base = False if pretrained else pretrained_base
     print(pretrained_base)
     base_net = get_mobilenet(
+        multiplier=1,
         pretrained=pretrained_base,
         num_sync_bn_devices=num_sync_bn_devices,
         **kwargs)
