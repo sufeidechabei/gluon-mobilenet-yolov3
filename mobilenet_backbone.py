@@ -196,6 +196,7 @@ class DarknetV3(gluon.HybridBlock):
         x = F.Pooling(x, kernel=(7, 7), global_pool=True, pool_type='avg')
         return self.output(x)
 
+
 class MobileBackbone(gluon.HybridBlock):
     """MobileNet.
 
@@ -231,8 +232,7 @@ class MobileBackbone(gluon.HybridBlock):
             "len(channels) should equal to len(layers) + 1, given {} vs {}".format(
                 len(channels), len(layers)))
         with self.name_scope():
-            self.features = MobileNet(classes = classes)
-
+            self.features = MobileNet(classes=classes)
 
     def hybrid_forward(self, F, x):
         output = self.features(x)
@@ -303,4 +303,3 @@ def darknet53(**kwargs):
     """
     print("model")
     return get_darknet('v3', 53, **kwargs)
-

@@ -453,7 +453,7 @@ if __name__ == '__main__':
     if num_sync_bn_devices > 1:
         print("netdebug")
         net = yolo3_darknet53_voc(
-            pretrained_base=False,
+            pretrained_base=True,
             num_sync_bn_devices=num_sync_bn_devices)
         async_net = yolo3_darknet53_voc(
             pretrained_base=False)  # used by cpu worker

@@ -754,7 +754,7 @@ def yolo3_mobilenet_voc(
 
     """
     from gluoncv.data import VOCDetection
-    from gluoncv.model_zoo.mobilenet import get_mobilenet
+    from mobilenet import get_mobilenet
     pretrained_base = False if pretrained else pretrained_base
     print(pretrained_base)
     base_net = get_mobilenet(
@@ -762,9 +762,9 @@ def yolo3_mobilenet_voc(
         pretrained=pretrained_base,
         num_sync_bn_devices=num_sync_bn_devices,
         **kwargs)
-    stages = [base_net.features[:6],
-              base_net.features[6:12],
-              base_net.features[12:]]
+    stages = [base_net.features[:36],
+              base_net.features[36:72],
+              base_net.features[72:-2]]
     anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62,
                                           45, 59, 119], [116, 90, 156, 198, 373, 326]]
     strides = [8, 16, 32]
