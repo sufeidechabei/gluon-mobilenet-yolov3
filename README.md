@@ -64,4 +64,10 @@ python3 train_yolo3_mobilenet.py --network darknet53 --dataset voc --gpus 0,1,2,
   journal = {arXiv},
   year={2018}
 }
+@article{mobilenets,
+  title={MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications},
+  author={Andrew G. Howard, Menglong Zhu, Bo Chen,Dmitry Kalenichenko,Weijun Wang, Tobias Weyand,Marco Andreetto, Hartwig Adam},
+  journal = {arXiv},
+  year = {2017}
+}
 ```
