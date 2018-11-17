@@ -49,9 +49,10 @@ python3 train_yolo3_mobilenet.py --network darknet53 --dataset voc --gpus 0,1,2,
 
 ## MAP
 
-| Backbone                | GPU     | Dataset    | MAP      | 
-| ----------------------- |:--------:|:--------:| :--------:|
-| Darknet(deepwise)      | 8 Tesla v100  | VOC    |  67.67       |
+| Backbone                | GPU     | Dataset    |  Size  |   MAP      | 
+| ----------------------- |:--------:|:--------: | :--------: | :--------:|
+| Darknet(deepwise)      | 8 Tesla v100  | VOC   | 416x416   |  67.67       |
+| Mobilenet               | 8 Tesla v100  | VOC   | 416X416   |  55.17       |
 
 
 
