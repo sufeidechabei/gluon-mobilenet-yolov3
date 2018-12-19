@@ -110,6 +110,7 @@ class LinearBottleneck(nn.HybridBlock):
         Layer expansion ratio.
     stride : int
         stride
+
     """
 
     def __init__(self, in_channels, channels, t, stride, **kwargs):
@@ -144,6 +145,8 @@ class MobileNet(HybridBlock):
         channel size multiplied by this multiplier.
     classes : int, default 1000
         Number of classes for the output layer.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
     """
 
     def __init__(
@@ -294,6 +297,8 @@ def get_mobilenet(multiplier, pretrained=False, ctx=cpu(),
         The context in which to load the pretrained weights.
     root : str, default $MXNET_HOME/models
         Location for keeping the model parameters.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
     """
     net = MobileNet(
         multiplier,
@@ -374,6 +379,8 @@ def mobilenet1_0(**kwargs):
         String value represents the hashtag for a certain version of pretrained weights.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
     """
     return get_mobilenet(1.0, **kwargs)
 
@@ -407,6 +414,8 @@ def mobilenet0_75(**kwargs):
         String value represents the hashtag for a certain version of pretrained weights.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
     """
     return get_mobilenet(0.75, **kwargs)
 
@@ -440,6 +449,8 @@ def mobilenet0_5(**kwargs):
         String value represents the hashtag for a certain version of pretrained weights.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
     """
     return get_mobilenet(0.5, **kwargs)
 
@@ -473,6 +484,8 @@ def mobilenet0_25(**kwargs):
         String value represents the hashtag for a certain version of pretrained weights.
     ctx : Context, default CPU
         The context in which to load the pretrained weights.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
     """
     return get_mobilenet(0.25, **kwargs)
 
