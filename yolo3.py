@@ -12,6 +12,7 @@ from mxnet.gluon import nn
 from mobilenet_backbone import _conv2d, darknet53
 from yolo_target import YOLOV3TargetMerger
 from loss import YOLOV3Loss
+from mobilenet import _add_conv_dw
 
 __all__ = [
     'YOLOV3',
@@ -213,6 +214,7 @@ class YOLODetectionBlockV3(gluon.HybridBlock):
             self.body = nn.HybridSequential(prefix='')
             for _ in range(2):
                 # 1x1 reduce
+
                 self.body.add(_conv2d(channel, 1, 0, 1, num_sync_bn_devices))
                 # 3x3 expand
                 self.body.add(
@@ -230,7 +232,52 @@ class YOLODetectionBlockV3(gluon.HybridBlock):
         route = self.body(x)
         tip = self.tip(route)
         return route, tip
+'''
+class YOLODetection(gluon.HybridBlock):
+    """YOLO V3 Detection Block which does the following:
 
+    - add a few conv layers
+    - return the output
+    - have a branch that do yolo detection.
+
+    Parameters
+    ----------
+    channel : int
+        Number of channels for 1x1 conv. 3x3 Conv will have 2*channel.
+    num_sync_bn_devices : int, default is -1
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
+
+    """
+
+    def __init__(self, channel, num_sync_bn_devices=-1, **kwargs, dw_channels):
+        super(YOLODetection, self).__init__(**kwargs)
+        assert channel % 2 == 0, "channel {} cannot be divided by 2".format(
+            channel)
+        with self.name_scope():
+            self.body = nn.HybridSequential(prefix='')
+            for _ in range(2):
+                # 1x1 reduce
+
+                self.body.add(_add_conv_dw(out, dw_channels, channels, stride, relu6=False,
+        num_sync_bn_devices=-
+        1))
+                # 3x3 expand
+                self.body.add(
+                    _conv2d(
+                        channel * 2,
+                        3,
+                        1,
+                        1,
+                        num_sync_bn_devices))
+            self.body.add(_conv2d(channel, 1, 0, 1, num_sync_bn_devices))
+            self.tip = _conv2d(channel * 2, 3, 1, 1, num_sync_bn_devices)
+
+    # pylint: disable=unused-argument
+    def hybrid_forward(self, F, x):
+        route = self.body(x)
+        tip = self.tip(route)
+        return route, tip
+'''
 
 class YOLOV3(gluon.HybridBlock):
     """YOLO V3 detection network.
@@ -389,6 +436,7 @@ class YOLOV3(gluon.HybridBlock):
                 self.stages, self.yolo_blocks, self.yolo_outputs):
             x = stage(x)
             routes.append(x)
+
 
         # the YOLO output layers are used in reverse order, i.e., from very
         # deep layers to shallow
@@ -582,7 +630,7 @@ def get_yolov3(name, stages, filters, anchors, strides, classes,
     """
     net = YOLOV3(stages, filters, anchors, strides, classes=classes, **kwargs)
     if pretrained:
-        from ..model_store import get_model_file
+        from gluoncv.model_zoo.model_store import get_model_file
         full_name = '_'.join(('yolo3', name, dataset))
         net.load_parameters(
             get_model_file(
@@ -734,7 +782,7 @@ def yolo3_mobilenet_voc(
         pretrained=False,
         num_sync_bn_devices=-1,
         **kwargs):
-    """YOLO3 multi-scale with darknet53 base network on VOC dataset.
+    """YOLO3 multi-scale with mobilenet base network on VOC dataset.
 
     Parameters
     ----------
@@ -756,15 +804,15 @@ def yolo3_mobilenet_voc(
     from gluoncv.data import VOCDetection
     from mobilenet import get_mobilenet
     pretrained_base = False if pretrained else pretrained_base
-    print(pretrained_base)
     base_net = get_mobilenet(
         multiplier=1,
         pretrained=pretrained_base,
         num_sync_bn_devices=num_sync_bn_devices,
         **kwargs)
-    stages = [base_net.features[:36],
-              base_net.features[36:72],
-              base_net.features[72:-2]]
+    stages = [base_net.features[:33],
+              base_net.features[33:69],
+              base_net.features[69:-2]]
+
     anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62,
                                           45, 59, 119], [116, 90, 156, 198, 373, 326]]
     strides = [8, 16, 32]
@@ -772,3 +820,48 @@ def yolo3_mobilenet_voc(
     return get_yolov3(
         'mobile', stages, [512, 256, 128], anchors, strides, classes, 'voc',
         pretrained=pretrained, num_sync_bn_devices=num_sync_bn_devices, **kwargs)
+
+def yolo3_mobilenet_coco(
+        pretrained_base=True,
+        pretrained=False,
+        num_sync_bn_devices=-1,
+        **kwargs):
+    """YOLO3 multi-scale with mobilenet base network on VOC dataset.
+
+    Parameters
+    ----------
+    pretrained_base : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    pretrained : bool or str
+        Boolean value controls whether to load the default pretrained weights for model.
+        String value represents the hashtag for a certain version of pretrained weights.
+    num_sync_bn_devices : int
+        Number of devices for training. If `num_sync_bn_devices < 2`, SyncBatchNorm is disabled.
+
+    Returns
+    -------
+    mxnet.gluon.HybridBlock
+        Fully hybrid yolo3 network.
+
+    """
+    from gluoncv.data import COCODetection
+    from mobilenet import get_mobilenet
+    pretrained_base = False if pretrained else pretrained_base
+    base_net = get_mobilenet(
+        multiplier=1,
+        pretrained=pretrained_base,
+        num_sync_bn_devices=num_sync_bn_devices,
+        **kwargs)
+    stages = [base_net.features[:33],
+              base_net.features[33:69],
+              base_net.features[69:-2]]
+
+    anchors = [[10, 13, 16, 30, 33, 23], [30, 61, 62,
+                                          45, 59, 119], [116, 90, 156, 198, 373, 326]]
+    strides = [8, 16, 32]
+    classes = COCODetection.CLASSES
+    return get_yolov3(
+        'mobile', stages, [512, 256, 128], anchors, strides, classes, 'coco',
+        pretrained=pretrained, num_sync_bn_devices=num_sync_bn_devices, **kwargs)
+
