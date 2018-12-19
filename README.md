@@ -39,10 +39,14 @@ cd gluon-mobilenet-yolov3
 python3 train_yolo3.py --network darknet53 --dataset voc --gpus 0,1,2,3,4,5,6,7 --batch-size 64 -j 16 --log-interval 100 --lr-decay-epoch 160,180 --epochs 200 --syncbn --warmup-epochs 4
 ```
 ### Mobilenet
-
+#### voc
 ```
-cd gluon-mobilenet-yolov3
 python3 train_yolo3_mobilenet.py --network darknet53 --dataset voc --gpus 0,1,2,3,4,5,6,7 --batch-size 64 -j 16 --log-interval 100 --lr-decay-epoch 160,180 --epochs 200 --syncbn --warmup-epochs 4
+```
+### coco
+```
+python3 train_yolo3_mobilenet.py --network darknet53 --dataset coco --gpus 0,1,2,3,4,5,6,7 --batch-size 64 -j 32 --log-interval 100 --lr-decay-epoch 220,250 --epochs 280 --syncbn --warmup-epochs 2 --mixup --no-mixup-epochs 20 --label-smooth --no-wd
+
 ```
 
 
@@ -51,8 +55,8 @@ python3 train_yolo3_mobilenet.py --network darknet53 --dataset voc --gpus 0,1,2,
 
 | Backbone                | GPU     | Dataset    |  Size  |   MAP      | 
 | ----------------------- |:--------:|:--------: | :--------: | :--------:|
-| Darknet(deepwise)      | 8 Tesla v100  | VOC   | 416x416   |  67.67       |
-| Mobilenet               | 8 Tesla v100  | VOC   | 416X416   |  55.17       |
+| Mobilenet               | 8 Tesla v100  | VOC   | random shape   |  76.12       |
+| Mobilenet               | 8 Tesla v100 | COCO2017 | random shape | 28.3          |
 
 
 
