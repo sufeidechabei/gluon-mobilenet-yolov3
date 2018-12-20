@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument(
         '--network',
         type=str,
-        default='darknet53',
+        default='mobilenet1_0',
         help="Base network name which serves as feature extraction base.")
     parser.add_argument(
         '--data-shape',
