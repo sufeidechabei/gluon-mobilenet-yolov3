@@ -29,7 +29,7 @@ We present a class of efficient models called MobileNets for mobile and embedded
 
 ## Prerequisites
 1. Python 3.6 +
-2. Gluoncv
+2. Gluoncv 0.3.0
 3. Mxnet
 
 ## Usage
